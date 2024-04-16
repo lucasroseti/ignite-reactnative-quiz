@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Alert, BackHandler, Text, View } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import Animated, { Easing, Extrapolation, interpolate, runOnJS, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Audio } from 'expo-av'
 import * as Haptics from 'expo-haptics'
 
-import { useNavigation, useRoute } from '@react-navigation/native';
-
+import { THEME } from '../../styles/theme';
 import { styles } from './styles';
 
 import { QUIZ } from '../../data/quiz';
@@ -18,8 +18,6 @@ import { QuizHeader } from '../../components/QuizHeader';
 import { ConfirmButton } from '../../components/ConfirmButton';
 import { OutlineButton } from '../../components/OutlineButton';
 import { ProgressBar } from '../../components/ProgressBar';
-
-import { THEME } from '../../styles/theme';
 import { OverlayFeedback } from '../../components/OverlayFeedback';
 
 interface Params {
@@ -93,15 +91,14 @@ export function Quiz() {
     }
 
     if (quiz.questions[currentQuestion].correct === alternativeSelected) {
-      setPoints(prevState => prevState + 1)
-      
       await playSound(true)
       setStatusReply(1)
+      setPoints(prevState => prevState + 1)
       handleNextQuestion()
     } else {
       await playSound(false)
-      shakeAnimation()
       setStatusReply(2)
+      shakeAnimation()
     }
 
     setAlternativeSelected(null);
@@ -124,17 +121,16 @@ export function Quiz() {
   }
 
   async function shakeAnimation() {
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
     shake.value = withSequence(
       withTiming(3, { duration: 400, easing: Easing.bounce }), 
-      withTiming(0, undefined, (finished) => {
+      withTiming(0, undefined, (finished => {
         'worklet'
-        
         if (finished) {
           runOnJS(handleNextQuestion)()
         }
-      })
+      }))
     )
   }
 
@@ -189,6 +185,8 @@ export function Quiz() {
       if(event.translationX < CARD_SKIP_AREA) {
         runOnJS(handleSkipConfirm)();
       }
+
+      cardPosition.value = withTiming(0)
     })
 
   const dragStyles = useAnimatedStyle(() => {
@@ -206,12 +204,6 @@ export function Quiz() {
     setQuiz(quizSelected);
     setIsLoading(false);
   }, []);
-
-  useEffect(() => {
-    if (quiz.questions) {
-      handleNextQuestion();
-    }
-  }, [points])
 
   useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', handleStop)
